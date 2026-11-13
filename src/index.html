@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EDGE_TTS</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cstyle%3Erect%7Bfill:%234c6ef5%7Dpath%7Bfill:%23fff%7D@media(prefers-color-scheme:dark)%7Brect%7Bfill:%237c9cff%7Dpath%7Bfill:%2316181d%7D%7D%3C/style%3E%3Crect width='64' height='64' rx='14'/%3E%3Cpath d='M18 26h6l10-8v28l-10-8h-6zM40 24c4 4 4 12 0 16l3 3c6-6 6-16 0-22z'/%3E%3C/svg%3E">
+<style>
+:root{--r:14px;--ease:cubic-bezier(.2,.8,.2,1)}
+[data-theme=dark]{--bg:#16181d;--card:#1e2128;--card2:#252932;--text:#dfe3ec;--muted:#a0a9b8;--accent:#7c9cff;--accent-t:#13161c;--line:#2d323d;--danger:#ef6b6b;--hl:rgba(124,156,255,.22)}
+[data-theme=light]{--bg:#f2f4f8;--card:#fff;--card2:#f0f2f7;--text:#262b35;--muted:#667085;--accent:#4c6ef5;--accent-t:#fff;--line:#e2e5ec;--danger:#d64545;--hl:rgba(76,110,245,.16)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;transition:background .3s,color .3s}
+header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line)}
+h1,h2{text-transform:uppercase;letter-spacing:.08em;margin:0}
+h1{font-size:20px;flex:1;display:flex;align-items:center;gap:8px}h1 i{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+h2{font-size:13px;color:var(--muted);margin-bottom:12px}
+main{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:16px;padding:16px;max-width:1760px;margin:auto}
+main>*{min-width:0}@media(max-width:860px){main{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:16px;box-shadow:0 4px 18px rgba(0,0,0,.12)}
+button,select,input,textarea{font:inherit;color:var(--text)}
+input,select,textarea{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;outline:none;transition:border-color .2s,box-shadow .2s;max-width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--hl)}
+textarea{width:100%;min-height:150px;resize:vertical;user-select:text}
+button{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:7px 13px;cursor:pointer;transition:transform .12s var(--ease),background .2s,box-shadow .2s,opacity .2s}
+button:hover{border-color:var(--accent)}button:active{transform:scale(.93)}
+button.pri{background:var(--accent);color:var(--accent-t);border-color:var(--accent);font-weight:600}
+button.pri:active{box-shadow:0 0 0 6px var(--hl)}
+button.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+button:disabled{opacity:.5;cursor:wait}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.tabs button.on{background:var(--accent);color:var(--accent-t);border-color:var(--accent)}
+.muted{color:var(--muted);font-size:13px}
+#read{max-height:260px;overflow:auto;padding:10px;background:var(--card2);border-radius:10px;line-height:1.9}
+#read span{cursor:pointer;border-radius:6px;padding:1px 2px;transition:background .2s}
+#read span:hover{background:var(--hl)}#read span.cur{background:var(--accent);color:var(--accent-t)}
+#read .A{border-bottom:2px solid var(--accent)}#read .B{border-bottom:2px solid #e8a35a}#read .C{border-bottom:2px solid #5ac8a0}#read .D{border-bottom:2px solid #c77dff}#read .N{border-bottom:2px dotted var(--muted)}
+#read{max-height:420px}.turn{display:block;margin:6px 0;padding:6px 10px;border-left:3px solid;border-radius:8px}
+.who{display:inline-block;font-size:11px;margin-right:8px;padding:0 7px;border-radius:99px;background:rgba(128,128,128,.25);vertical-align:1px}
+.tA{border-color:#7c9cff;background:rgba(124,156,255,.12)}.tB{border-color:#e8a35a;background:rgba(232,163,90,.12)}.tC{border-color:#5ac8a0;background:rgba(90,200,160,.12)}.tD{border-color:#c77dff;background:rgba(199,125,255,.12)}.tN{border-color:#8a93a3;background:rgba(138,147,163,.14)}.tM{border-color:#5aa9e8;background:rgba(90,169,232,.12)}.tF{border-color:#e86fa0;background:rgba(232,111,160,.12)}
+#read .turn span{border-bottom:0;padding:0 1px}
+#read{line-height:1.6;padding:6px}.turn{margin:3px 0!important;padding:3px 10px!important;border-radius:7px!important;line-height:1.6}.who{font-size:10.5px!important;margin-right:6px!important;padding:0 6px!important;line-height:1.5}
+#bar{height:10px;background:var(--card2);border-radius:6px;cursor:pointer;position:relative;margin:12px 0 4px;overflow:hidden}
+#bar b{position:absolute;inset:0 auto 0 0;width:0;background:var(--accent);border-radius:6px}
+.item{display:flex;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--card2);transition:border-color .2s,transform .2s,box-shadow .2s;touch-action:pan-y}
+.item.act{border-color:var(--accent)}.item.drag{opacity:.85;box-shadow:0 8px 24px rgba(0,0,0,.35);transform:scale(1.02);z-index:2;position:relative}
+.item .h{cursor:grab;color:var(--muted);padding:4px 6px;touch-action:none;user-select:none}
+.item .t{flex:1;min-width:0}.item .t b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .t small{color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{font-size:11px;padding:1px 7px;border-radius:99px;background:var(--hl);color:var(--accent)}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:50}
+.toast{background:var(--card);border:1px solid var(--accent);padding:10px 16px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.3);animation:in .3s var(--ease)}
+.toast.err{border-color:var(--danger)}@keyframes in{from{opacity:0;transform:translateY(12px)}}
+details summary{cursor:pointer;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:10px}.grid label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:3px}
+.spin{animation:sp .8s linear infinite;display:inline-block}@keyframes sp{to{transform:rotate(360deg)}}
+/* ---------- 宽屏 / 手机适配 ---------- */
+html{-webkit-text-size-adjust:100%}body{overflow-x:hidden}
+header{padding:12px max(20px,env(safe-area-inset-right)) 12px max(20px,env(safe-area-inset-left))}
+@media(min-width:1500px){main{grid-template-columns:minmax(0,2fr) minmax(360px,1fr)}}
+@media(max-width:860px){
+  main{padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));gap:8px;max-width:none}
+  header{padding:8px max(10px,env(safe-area-inset-right)) 8px max(10px,env(safe-area-inset-left));gap:6px}
+  h1{font-size:17px}
+  .card{padding:12px;margin-bottom:8px;border-radius:12px}
+  input,select,textarea{font-size:16px;padding:9px 10px;min-width:0}          /* 16px: iOS 聚焦不再自动放大页面 */
+  button{padding:9px 12px;min-height:40px}
+  textarea{min-height:220px;height:38vh}
+  .row{gap:6px}
+  .row>.muted{font-size:12.5px}
+  #title{flex:1 1 100%!important;min-width:0!important}
+  .tabs{display:flex;width:100%;gap:6px}.tabs button{flex:1}
+  #cust{align-items:flex-start}#roles{flex:1 1 100%}#roles label{flex:1 1 44%;min-width:0;max-width:100%;display:flex;flex-direction:column;gap:3px}#roles select{width:100%}
+  #clean{flex:1 1 100%!important;min-width:0!important}
+  #btnSave,#btnNew{flex:1 1 40%}
+  #btnTxt,#btnClear,#btnClean,#btnUndo{flex:1 1 auto}
+  .grid{grid-template-columns:1fr 1fr;gap:8px}.grid select,.grid input{width:100%}
+  #read{max-height:46vh;font-size:15px}
+  #bar{height:16px;border-radius:8px;margin:14px 0 6px}#bar b{border-radius:8px}
+  #play{flex:1 1 100%;font-size:16px;min-height:46px}
+  #back,#fwd,#dl{flex:1 1 auto}
+  .item{padding:10px 8px;gap:6px}.item button{padding:8px 9px;min-height:38px}
+  .item .h{padding:8px 8px}
+  #toasts{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom))}.toast{padding:10px 14px}
+  details summary{padding:6px 0}
+}
+@media(max-width:420px){.grid{grid-template-columns:1fr}#roles label{flex-basis:100%}}
+</style>
+</head>
+<body>
+<header>
+  <h1><i></i>EDGE_TTS</h1>
+  <button id="refresh" title="局部刷新数据 (不刷新整页)">↻ 刷新</button>
+  <button id="theme">◐ 主题</button>
+</header>
+<main>
+<section>
+  <div class="card">
+    <h2>Editor</h2>
+    <div class="row"><input id="title" placeholder="标题 (可留空)" style="flex:1;min-width:160px">
+      <span class="tabs"><button id="m1" class="on">单人朗读</button> <button id="m2">双人对话</button></span></div>
+    <textarea id="txt" placeholder="粘贴文本即可自动播放。&#10;双人对话格式示例:&#10;主持人：大家好，欢迎收听。&#10;嘉宾：谢谢邀请！"></textarea>
+    <div id="cust" class="row" hidden><span class="muted">个性化语音：</span><span id="roles" class="row"></span><button id="custClr" title="清除个性化，恢复默认">恢复默认</button></div>
+    <div class="row"><input id="clean" placeholder="要清洗的字符，空格分隔，如：\ | ~ ### ※" style="flex:1;min-width:180px"><button id="btnClean">🧹 处理文本</button><button id="btnUndo" style="display:none">↶ 撤销</button></div>
+    <div class="row">
+      <label class="muted"><input type="checkbox" id="prog"> 渐进式合成</label>
+      <label class="muted">停顿 <select id="gap"><option value="compact">紧凑</option><option value="natural">自然</option><option value="relaxed">舒缓</option></select></label>
+      <label class="muted"><input type="checkbox" id="names"> 朗读角色名</label>
+      <label class="muted"><input type="checkbox" id="auto"> 粘贴后自动播放</label>
+      <span class="muted" id="info"></span>
+    </div>
+    <div class="row">
+      <button class="pri" id="btnSave">💾 保存到列表</button>
+      <button id="btnNew">＋ 另存为新项</button>
+      <button id="btnTxt">⬇ 文本</button>
+      <button id="btnClear">清空</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Player</h2>
+    <div class="row">
+      <button class="pri" id="play">▶ 播放</button>
+      <button id="back">⏪ 10s</button><button id="fwd">10s ⏩</button>
+      <label class="muted">倍速 <select id="rate"><option>0.5</option><option>0.75</option><option selected>1</option><option>1.25</option><option>1.5</option><option>2</option><option>2.5</option><option>3</option></select></label>
+      <button id="dl">⬇ 音频</button>
+    </div>
+    <div id="bar" title="点击跳转"><b></b></div>
+    <div class="muted" id="time">0:00 / 0:00</div>
+    <audio id="au" preload="auto"></audio>
+    <h2 style="margin-top:14px">Reader · 点击任意句子从此处播放</h2>
+    <div id="read" class="muted">（输入文本后在此预览）</div>
+  </div>
+  <div class="card"><details><summary>Cloud · 千问 TTS
+  （可选，配置保存在服务端）</summary>
+<div class="row" style="margin-top:10px"><label class="muted"><input type="checkbox" id="q_en"> 启用千问语音</label><span class="muted" id="q_st"></span></div>
+<div class="grid">
+<label>接口地址 (Base URL)<input id="q_url" placeholder="https://cn-beijing.maas.qianwenaiapi.com" autocomplete="off"></label>
+<label>模型<input id="q_model" list="q_models" autocomplete="off"><datalist id="q_models"><option value="qwen-audio-3.1-tts-flash"><option value="qwen-audio-3.1-tts-plus"></datalist></label>
+<label>API Key<input id="q_key" type="password" autocomplete="new-password" placeholder="粘贴 DashScope API Key"></label>
+<label>自定义音色 (空格/逗号分隔，如复刻/设计音色)<input id="q_extra" autocomplete="off"></label></div>
+<div class="row"><button class="pri" id="q_save">保存</button><button id="q_test">测试连接</button><button id="q_clr">清除 Key</button></div>
+<div class="muted">POST {接口地址}/api/v1/services/audio/tts/SpeechSynthesizer · Key 只保存在服务器，不会回传浏览器。更换接口域名会自动清除已存 Key。</div></details></div>
+  <div class="card"><details open><summary>默认语音 · 自动保存</summary>
+    <div class="muted" style="margin-top:8px">对话：标“男/女”的角色直接对应，其他角色按出场顺序 女→男 交替；旁白用单人语音。可在编辑器的“个性化语音”里为具体角色单独指定（优先于默认，并随列表项保存）。</div>
+    <div class="grid" id="vset"></div></details></div>
+</section>
+<aside>
+  <div class="card">
+    <h2>Playlist</h2>
+    <div class="row"><input id="q" placeholder="搜索..." style="flex:1"></div>
+    <div id="list"></div>
+    <button id="more" style="width:100%;display:none">加载更多</button>
+  </div>
+</aside>
+</main>
+<div id="toasts"></div>
+<script>
+'use strict';
+const $=s=>document.querySelector(s), au=$('#au');
+const S={cust:{},set:{},voices:[],list:[],cur:null,mode:'single',units:[],off:[],total:0,sig:'',page:1};
+const SET_FIELDS=[['zhS','中文 · 单人朗读'],['enS','English · single'],['zhF','中文 · 女声'],['zhM','中文 · 男声'],['enF','English · female'],['enM','English · male']];
+
+/* ---------- utils ---------- */
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function api(u,o={}){const r=await fetch(u,{method:o.method||'GET',headers:{'Content-Type':'application/json'},body:o.body?JSON.stringify(o.body):undefined});
+  if(!r.ok){let m=r.status;try{m=(await r.json()).error||m}catch(e){}throw new Error(m)}return r.json()}
+function toast(m,err){const d=document.createElement('div');d.className='toast'+(err?' err':'');d.textContent=m;$('#toasts').appendChild(d);setTimeout(()=>d.remove(),2800)}
+const fmt=t=>isFinite(t)?Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'):'0:00';
+const lang=t=>((t.match(/[\u4e00-\u9fff]/g)||[]).length>t.replace(/\s/g,'').length*.15)?'zh':'en';
+function reset(b){clearTimeout(b._t);b.textContent=b.dataset.old;b.classList.remove('danger');delete b.dataset.armed}
+function armed(b,fn,label){ // in-place confirm: click twice, auto-cancel after 3s
+  if(b.dataset.armed){reset(b);fn();return}
+  b.dataset.armed=1;b.dataset.old=b.textContent;b.textContent=label||'确认删除?';b.classList.add('danger');b._t=setTimeout(()=>reset(b),3000)}
+document.addEventListener('click',e=>document.querySelectorAll('[data-armed]').forEach(b=>{if(b!==e.target.closest('button'))reset(b)}));
+
+/* ---------- theme / settings ---------- */
+function applyTheme(t){document.documentElement.dataset.theme=t}
+$('#theme').onclick=()=>{S.set.theme=S.set.theme==='dark'?'light':'dark';applyTheme(S.set.theme);saveSet()};
+async function saveSet(){try{await api('/api/settings',{method:'PUT',body:S.set})}catch(e){toast('设置保存失败',1)}}
+const ENG={edge:['Edge 免费',0],qwen:['千问 ☁',1]},LANG=[['zh','中文 · 普通话'],['yue','粤语'],['tw','台湾'],['en','English']];
+function voiceOpts(sel,cur,groups,auto){
+  const lc=v=>v.group==='en'?(v.loc||''):'';let html=auto?`<option value="auto">${esc(auto)}</option>`:'';
+  LANG.forEach(([g,gl])=>{if(groups&&!groups.includes(g))return;const L=S.voices.filter(v=>v.group===g);
+    const keys=[...new Set(L.map(v=>lc(v)+'|'+v.engine))].sort((x,y)=>{const[a,b]=[x.split('|'),y.split('|')];return a[0]===b[0]?ENG[a[1]][1]-ENG[b[1]][1]:(a[0]==='en-US'?-1:b[0]==='en-US'?1:a[0].localeCompare(b[0]))});
+    keys.forEach(k=>{const[loc,eng]=k.split('|'),items=L.filter(v=>lc(v)===loc&&v.engine===eng).sort((a,b)=>a.gender===b.gender?a.label.localeCompare(b.label,'zh'):(a.gender==='F'?-1:b.gender==='F'?1:0));
+      html+=`<optgroup label="${gl}${loc?' · '+loc.replace('en-',''):''} · ${ENG[eng][0]}">`+items.map(v=>`<option value="${esc(v.name)}">${esc(v.label)}</option>`).join('')+'</optgroup>'})});
+  sel.innerHTML=html;sel.value=cur}
+const VGROUPS={zhS:['zh','yue','tw'],enS:['en'],zhF:['zh','yue','tw'],zhM:['zh','yue','tw'],enF:['en'],enM:['en']};
+function buildSettings(){
+  $('#vset').innerHTML=SET_FIELDS.map(([k,l])=>`<label>${l}<select data-k="${k}"></select></label>`).join('');
+  $('#vset').querySelectorAll('select').forEach(s=>{voiceOpts(s,S.set[s.dataset.k],VGROUPS[s.dataset.k]);s.onchange=()=>{S.set[s.dataset.k]=s.value;saveSet();toast('已保存语音设置');buildUnits();reVoice()}});
+}
+$('#auto').onchange=e=>{S.set.autoPlay=e.target.checked;saveSet()};
+
+/* ---------- parsing: roles / narrator / gender ---------- */
+function splitTitle(t){const m=t.match(/^\s*(?:#+\s*)?\**\s*(?:标题|题目|title)\s*[:：]\s*(.+?)\s*\**\s*(?:\n|$)/i);return m?{title:m[1].replace(/[*《》"“”]/g,'').trim(),body:t.slice(m[0].length)}:{title:'',body:t}}
+const DEF={cleanChars:'',progressive:false,gap:'natural',readNames:false,zhS:'zh-CN-XiaoxiaoNeural',enS:'en-US-AriaNeural',zhF:'zh-CN-XiaoxiaoNeural',zhM:'zh-CN-YunxiNeural',enF:'en-US-AriaNeural',enM:'en-US-GuyNeural'};
+const R_N=/^(旁白|解说|开场白?|开场语?|旁述|画外音|结尾语?|结束语|总结|串场|narrator|intro|outro)$/i,R_M=/^(男|男士|男生|男声|先生|man|male)$/i,R_F=/^(女|女士|女生|女声|小姐|woman|female)$/i;
+const RANKS=[/^(甲|a|q|主持人?|host|s1|speaker ?1|1|主播|提问者?|问)$/i,/^(乙|b|嘉宾|guest|s2|speaker ?2|2|回答者?|答)$/i,/^(丙|c|s3|speaker ?3|3)$/i,/^(丁|d|s4|speaker ?4|4)$/i];
+const known=l=>R_N.test(l)||R_M.test(l)||R_F.test(l)||RANKS.some(r=>r.test(l));
+// light normalisation so markdown/list/timestamp noise never breaks label detection
+const clean=l=>l.replace(/^\s*(?:#{1,6}\s*|>+\s*|[-*+•]\s+|\d+[.)、]\s+)/,'').replace(/\*\*|__|`/g,'').replace(/^\s*[\[【(（]?\d{1,2}:\d{2}(?::\d{2})?[\]】)）]?\s*/,'').trim();
+const LRE=/^[\[【(（「『<]?\s*([^:：，。！？!?,.;；、\[\]【】()（）「」『』<>]{1,16}?)\s*[\]】)）」』>]?\s*[:：]\s*(.*)$/;
+const sent=s=>(s.match(/[^。！？!?；;\n]+[。！？!?；;]*/g)||[]).map(x=>x.trim()).filter(Boolean);
+function parse(text){
+  const raw=text.split('\n'),cnt={};
+  raw.forEach(l=>{const m=clean(l).match(LRE);if(m){const k=m[1].trim();cnt[k]=(cnt[k]||0)+1}});
+  const ok=k=>known(k)||cnt[k]>=2;
+  const drop=new Set(Object.keys(cnt).filter(k=>!known(k)&&cnt[k]>=2).sort((a,b)=>cnt[b]-cnt[a]).slice(6));
+  const entries=[];let cur=null,inline=false,blank=false;
+  for(const l of raw){const c=clean(l);if(!c){blank=true;continue}
+    const m=c.match(LRE),k=m&&m[1].trim();
+    if(m&&ok(k)&&!drop.has(k)){cur=k;inline=!!m[2].trim();blank=false;if(inline)entries.push({label:cur,text:m[2]});continue}
+    if(/^[（(].*[）)]$/.test(c)){if(c.length>8)entries.push({label:null,text:c.slice(1,-1)})}  // 短括号如(笑)直接忽略;          // (旁白式插话)
+    else if(!cur||(inline&&blank)){entries.push({label:null,text:c});cur=null}            // 开场白/插话 -> 第三人
+    else entries.push({label:cur,text:c});                                               // 同一角色的续行
+    blank=false}
+  return{entries,labels:[...new Set(entries.filter(e=>e.label).map(e=>e.label))]}}
+// 自动匹配: 返回 {k:'A'女|'B'男|'N'旁白, v:语音}。男/女标签直接对应; 称谓关键词推断; 其余按出场顺序 女→男 交替
+const G_M=/(先生|叔|哥|爸|父|爷|公|伯|儿子|男|boy|mr|sir|dad|father|brother|king|he)/i,G_F=/(女士|小姐|姐|妈|母|奶|婆|姨|妹|姑|娘|女|girl|ms|mrs|mom|mother|sister|queen|she)/i;
+const vOk=n=>n&&S.voices.some(v=>v.name===n);
+const vShort=n=>{const v=S.voices.find(x=>x.name===n);return v?v.label.split(' · ')[0]:(n||'—')};
+// 语音优先级: 个性化(S.cust, 按角色名) > 默认设置
+const pick=(name,def)=>({v:vOk(S.cust[name])?S.cust[name]:def,c:vOk(S.cust[name])});
+function voiceFor(label,L,ctx){
+  let g;
+  if(!label||R_N.test(label))g='N';
+  else if(label in ctx.u)g=ctx.u[label];
+  else{
+    if(R_M.test(label))g='M';else if(R_F.test(label))g='F';
+    else{const i=RANKS.findIndex(r=>r.test(label));
+      if(/^a$/i.test(label)&&ctx.q)g='M';
+      else if(i>=0)g=i%2?'M':'F';
+      else if(G_M.test(label)&&!G_F.test(label))g='M';else if(G_F.test(label)&&!G_M.test(label))g='F';
+      else g=ctx.last==='F'?'M':'F'}
+    ctx.u[label]=g}
+  if(g!=='N')ctx.last=g;
+  const def=g==='N'?S.set[L+'S']:S.set[L+(g==='M'?'M':'F')],r=pick(label||'旁白',def);
+  return{k:g==='M'?'B':g==='N'?'N':'A',v:r.v,def}}
+const pre=t=>{(S.set.cleanChars||'').split(/\s+/).filter(Boolean).forEach(x=>{t=t.split(x).join('')});return t.replace(/\r/g,'').replace(/\\/g,'\n').replace(/[|^~`<>]/g,'').replace(/\*\*|__/g,'')};
+const gapMul=()=>({compact:.5,natural:1,relaxed:1.8}[S.set.gap]||1);
+function buildUnits(){
+  const rawT=splitTitle($('#txt').value).body,hasBs=rawT.includes('\\')&&!(S.set.cleanChars||'').split(/\s+/).includes('\\'),text=pre(rawT).trim(),L=lang(text),units=[],roles={};let note='';
+  if(S.mode==='single'&&parse(text).labels.length>=2){setMode('dialogue');return}   // labelled script typed/loaded in single mode: switch so names are never read aloud
+  if(S.mode==='dialogue'){
+    const p=parse(text),ctx={q:p.labels.some(x=>/^q$/i.test(x)),u:{},last:null};
+    if(p.labels.length){let prev=null;
+      p.entries.forEach(e=>{const r=voiceFor(e.label,L,ctx);roles[e.label||'旁白']=r.def;
+        if(S.set.readNames&&e.label&&e.label!==prev&&!R_N.test(e.label))units.push({text:e.label,spk:'N',who:'N:'+e.label,voice:pick('旁白',S.set[L+'S']).v,nm:1});
+        prev=e.label;sent(e.text).forEach(t=>units.push({text:t,spk:r.k,who:e.label||'旁白',voice:r.v}))});
+      note=' · 识别到 '+p.labels.length+' 个角色'}
+    else if(hasBs){text.split('\n').map(x=>x.trim()).filter(Boolean).forEach((ln,i)=>{const k=i%2?'B':'A',d=S.set[L+(k==='A'?'F':'M')];roles[k]=d;sent(ln).forEach(t=>units.push({text:t,spk:k,who:k,voice:pick(k,d).v}))});note=' · 按“\\”分段，A/B 交替'}
+    else{sent(text).forEach((t,i)=>{const k=i%2?'B':'A',d=S.set[L+(k==='A'?'F':'M')];roles[k]=d;units.push({text:t,spk:k,who:k,voice:pick(k,d).v})});note=text?' · 无角色标识，按句交替(A/B)':''}
+  }else{const d=S.set[L+'S'];if(text)roles['@单人']=d;sent(text).forEach((t,i)=>units.push({text:t,spk:'A',br:i%3===0,voice:pick('@单人',d).v}))}
+  const g=gapMul();units.forEach((u,i)=>{const n=units[i+1];u.gap=!n?0:u.nm?Math.round(120*g):Math.round((n.who!==u.who?450:180)*g)});
+  S.units=units;
+  let html='',open=false,last=null;
+  units.forEach((u,i)=>{if(!open||u.br||(S.mode==='dialogue'&&u.who!==last)){if(open)html+='</div>';html+=`<div class="turn t${u.spk}">${u.who&&S.mode==='dialogue'?`<b class="who">${esc(u.who)}</b>`:''}`;open=true}
+    html+=`<span data-i="${i}" class="${u.spk}">${esc(u.text)}</span> `;last=u.who});
+  if(open)html+='</div>';html=html||'（输入文本后在此预览）';
+  const rd=$('#read');if(rd.dataset.h!==html){const st=rd.scrollTop;rd.innerHTML=html;rd.dataset.h=html;rd.scrollTop=st;
+    const c=S.trkIdx!=null&&rd.querySelector(`span[data-i="${S.trkIdx}"]`);if(c&&S.trk&&!au.paused)c.classList.add('cur')}
+  drawRoles(roles);
+  $('#info').textContent=units.length?`${units.length} 句 · ${L==='zh'?'中文':'English'}${note}`:'';
+}
+function drawRoles(roles){
+  const names=Object.keys(roles),box=$('#cust');box.hidden=!names.length;
+  $('#roles').innerHTML=names.map(n=>`<label class="muted">${esc(n[0]==='@'?n.slice(1):n)} <select data-r="${esc(n)}"></select></label>`).join('');
+  $('#roles').querySelectorAll('select').forEach(sl=>{const n=sl.dataset.r;voiceOpts(sl,vOk(S.cust[n])?S.cust[n]:'auto',null,'默认 · '+vShort(roles[n]));
+    sl.onchange=()=>{if(sl.value==='auto')delete S.cust[n];else S.cust[n]=sl.value;custChanged()}});
+  $('#custClr').style.display=Object.keys(S.cust).length?'':'none'}
+async function custChanged(){buildUnits();reVoice();
+  if(S.cur){try{await api('/api/playlist/'+S.cur,{method:'PUT',body:{cust:S.cust}});const it=S.list.find(i=>i.id===S.cur);if(it)it.cust=Object.assign({},S.cust);toast('个性化语音已保存')}catch(e){toast(e.message,1)}}
+  else toast('已设置个性化语音，点“保存到列表”后随条目保存')}
+$('#custClr').onclick=()=>{S.cust={};custChanged()};
+$('#prog').onchange=e=>{S.set.progressive=e.target.checked;saveSet()};
+$('#gap').onchange=e=>{S.set.gap=e.target.value;saveSet();buildUnits();reVoice()};
+$('#names').onchange=e=>{S.set.readNames=e.target.checked;saveSet();buildUnits();reVoice()};
+
+/* ---------- tracks: 1 track (one-shot) or many (progressive); 48kbps CBR => 6000 bytes/s ---------- */
+const BPS=6000;let TOKEN=0;
+S.tracks=[];S.k=0;S.trk=null;S.busy=false;S.full=null;S.fullSig='';
+const sigOf=()=>JSON.stringify([S.units.map(u=>[u.text,u.voice,u.gap]),!!S.set.progressive]);
+async function synthRange(i0,i1){
+  const r=await api('/api/synth',{method:'POST',body:{segments:S.units.slice(i0,i1).map(u=>({text:u.text,voice:u.voice,gap:u.gap}))}});
+  let c=0;const off=r.sizes.map(z=>{const o=c;c+=z;return o});
+  return{url:r.url,i0,i1:i0+r.sizes.length,off,total:c,ch:S.units.slice(i0,i1).reduce((a,u)=>a+u.text.length,0)}}
+function loadTrack(k,frac,play){S.k=k;S.trk=S.tracks[k];
+  au.onloadedmetadata=()=>{au.currentTime=frac*au.duration;au.playbackRate=+$('#rate').value;if(play)au.play().catch(()=>{})};
+  au.src=S.trk.url;au.load()}
+function goTrack(k,frac){if(S.trk===S.tracks[k]&&isFinite(au.duration)){au.currentTime=frac*au.duration;au.play()}else loadTrack(k,frac,true)}
+function gTotal(){let d=0,ch=0;S.tracks.forEach(t=>{d+=t.total/BPS;ch+=t.ch});return ch?d+(S.allCh-ch)*(d/ch):0}
+function gTime(){let s=0;for(let i=0;i<S.k;i++)s+=S.tracks[i].total/BPS;return s+au.currentTime}
+function seekG(sec){sec=Math.max(0,sec);let s=0;
+  for(let k=0;k<S.tracks.length;k++){const d=S.tracks[k].total/BPS;if(sec<s+d||k===S.tracks.length-1)return goTrack(k,Math.min(.999,(sec-s)/d));s+=d}}
+// returns true when freshly built (caller starts playback from track 0)
+async function start(){
+  buildUnits();if(!S.units.length)throw new Error('请先输入文本');
+  const sig=sigOf();if(sig===S.sig&&S.tracks.length)return false;
+  const my=++TOKEN,n=S.units.length;S.sig=sig;S.tracks=[];S.trk=null;S.wait=false;S.busy=true;au.pause();
+  S.allCh=S.units.reduce((a,u)=>a+u.text.length,0);
+  $('#play').disabled=true;$('#play').innerHTML='<span class="spin">⟳</span> 合成中';
+  try{
+    if(!S.set.progressive){const t=await synthRange(0,n);if(my!==TOKEN)return false;S.tracks=[t];S.full=t;S.fullSig=sig;S.busy=false;return true}
+    const sz=[2,6,12];let i=0,c=0,fail=null;
+    const first=new Promise(res=>{(async()=>{try{
+      while(i<n&&my===TOKEN){const e=Math.min(n,i+(sz[c++]||16)),t=await synthRange(i,e);if(my!==TOKEN)return;
+        S.tracks.push(t);i=e;if(S.tracks.length===1)res();else if(S.wait){S.wait=false;loadTrack(S.tracks.length-1,0,true)}}
+      if(my===TOKEN){S.busy=false;S.sig=sig}
+    }catch(e){fail=e;res();toast('渐进合成中断: '+e.message,1)}finally{if(my===TOKEN)S.busy=false}})()});
+    await first;if(fail)throw fail;return true;
+  }finally{if(my===TOKEN){$('#play').disabled=false;upBtn()}}}
+async function getFull(){buildUnits();const s=sigOf();if(S.full&&S.fullSig===s)return S.full.url;
+  const t=await synthRange(0,S.units.length);S.full=t;S.fullSig=s;return t.url}
+function upBtn(){$('#play').textContent=au.paused?(au.currentTime>0&&!au.ended?'▶ 继续':'▶ 播放'):'⏸ 暂停'}
+async function toggle(){
+  if(!au.paused){au.pause();return}
+  try{const fresh=await start();
+    if(fresh||!S.trk)loadTrack(0,0,true);
+    else if(au.ended&&S.k===S.tracks.length-1&&!S.busy)loadTrack(0,0,true);
+    else au.play();                                   // resume from where it paused
+  }catch(e){ // fallback: browser built-in (Edge) speech synthesis
+    const t=$('#txt').value.trim();if(!t||!window.speechSynthesis)return toast('合成失败: '+e.message,1);
+    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=lang(t)==='zh'?'zh-CN':'en-US';u.rate=+$('#rate').value;speechSynthesis.speak(u);
+    toast('服务端不可用, 已切换浏览器内置语音',1)}}
+$('#read').onclick=async e=>{const s=e.target.closest('span');if(!s)return;followUntil=0;const i=+s.dataset.i;
+  try{await start().then(f=>f&&0);
+    const k=S.tracks.findIndex(t=>i>=t.i0&&i<t.i1);if(k<0)return toast('该句还在合成中，请稍候',1);
+    const t=S.tracks[k];goTrack(k,t.off[i-t.i0]/t.total)}catch(err){toast('跳转失败: '+err.message,1)}};
+$('#play').onclick=toggle;
+$('#back').onclick=()=>seekG(gTime()-10);$('#fwd').onclick=()=>seekG(gTime()+10);
+$('#rate').onchange=e=>{au.playbackRate=+e.target.value};
+$('#bar').onclick=e=>{const r=e.currentTarget.getBoundingClientRect();seekG((e.clientX-r.left)/r.width*gTotal())};
+$('#dl').onclick=async()=>{const b=$('#dl');b.textContent='合成中…';try{const a=document.createElement('a');a.href=await getFull();a.download=($('#title').value||'edge_tts')+'.mp3';a.click()}catch(e){toast('下载失败: '+e.message,1)}b.textContent='⬇ 音频'};
+['play','pause'].forEach(ev=>au.addEventListener(ev,upBtn));
+au.addEventListener('ended',()=>{if(S.k+1<S.tracks.length)loadTrack(S.k+1,0,true);else if(S.busy)S.wait=true;upBtn()});
+let followUntil=0;  // 用户手动滚动 Reader 后，一段时间内不自动跟随
+(()=>{const r=document.getElementById('read'),hold=()=>{followUntil=Date.now()+8000};
+  ['wheel','touchmove'].forEach(ev=>r.addEventListener(ev,hold,{passive:true}));
+  r.addEventListener('pointerdown',e=>{if(!e.target.closest('span'))hold()})})();   // 拖动滚动条 / 空白处按下
+function follow(n){ // 仅调整 #read 自身的 scrollTop，不会滚动页面，也不会抢焦点
+  if(Date.now()<followUntil)return;
+  const r=$('#read'),rr=r.getBoundingClientRect(),nr=n.getBoundingClientRect();
+  if(nr.top>=rr.top&&nr.bottom<=rr.bottom)return;                       // 已在可视区内
+  r.scrollTo({top:r.scrollTop+(nr.top-rr.top)-(rr.height-nr.height)/2,behavior:'smooth'})}
+function mark(i){S.trkIdx=i;const el=$('#read span.cur');if(el&&+el.dataset.i===i)return;if(el)el.classList.remove('cur');
+  const n=$(`#read span[data-i="${i}"]`);if(n){n.classList.add('cur');follow(n)}}
+au.addEventListener('timeupdate',()=>{const t=S.trk;if(!t)return;const T=gTotal(),g=gTime(),d=au.duration||0;
+  $('#bar b').style.width=T?Math.min(100,g/T*100)+'%':0;$('#time').textContent=fmt(g)+' / '+(S.busy?'~':'')+fmt(T);
+  if(!d)return;const f=au.currentTime/d*t.total;let j=0;while(j+1<t.off.length&&t.off[j+1]<=f)j++;mark(t.i0+j)});
+document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  if(e.code==='Space'){e.preventDefault();toggle()}else if(e.code==='ArrowLeft')seekG(gTime()-5);else if(e.code==='ArrowRight')seekG(gTime()+5)});
+
+/* ---------- live voice switching: re-synthesise (cache keeps unchanged sentences free) and resume at the same sentence ---------- */
+async function reVoice(){
+  if(!S.tracks.length||!S.trk||sigOf()===S.sig)return;       // nothing loaded yet: new voices apply on next play
+  const my=++TOKEN;S.busy=false;toast('已切换语音，正在重新合成…');
+  try{const t=await synthRange(0,S.units.length);if(my!==TOKEN)return;
+    const was=!au.paused,i=Math.min(S.trkIdx||0,t.off.length-1);
+    S.tracks=[t];S.full=t;S.fullSig=S.sig=sigOf();S.allCh=S.units.reduce((a,u)=>a+u.text.length,0);S.trk=null;
+    loadTrack(0,t.off[i]/t.total,was)}                         // old audio keeps playing until the new one is ready
+  catch(e){toast('重新合成失败: '+e.message,1)}}
+
+/* ---------- Qwen cloud TTS config ---------- */
+async function loadQwen(){try{const c=await api('/api/qwen');$('#q_en').checked=c.enabled;$('#q_url').value=c.baseUrl;$('#q_model').value=c.model;$('#q_extra').value=c.extra||'';
+  $('#q_key').placeholder=c.hasKey?'已保存 '+c.keyMask+'（留空=不修改）':'粘贴 DashScope API Key';$('#q_st').textContent=c.hasKey?(c.enabled?'● 已启用':'○ 已保存，未启用'):'○ 未配置 Key'}catch(e){}}
+async function saveQwen(extra){const b=Object.assign({enabled:$('#q_en').checked,baseUrl:$('#q_url').value,model:$('#q_model').value,extra:$('#q_extra').value},extra||{});
+  const k=$('#q_key').value.trim();if(k)b.apiKey=k;await api('/api/qwen',{method:'PUT',body:b});$('#q_key').value='';
+  await loadQwen();S.voices=await api('/api/voices');buildSettings();buildUnits()}
+$('#q_save').onclick=async()=>{try{await saveQwen();toast('千问配置已保存')}catch(e){toast(e.message,1)}};
+$('#q_en').onchange=async()=>{try{await saveQwen();toast($('#q_en').checked?'已启用千问语音':'已关闭千问语音')}catch(e){toast(e.message,1)}};
+$('#q_test').onclick=async()=>{const b=$('#q_test');b.disabled=true;b.textContent='测试中…';
+  try{await saveQwen();const r=await api('/api/qwen/test',{method:'POST'});toast(r.ok?`连接成功 · ${r.ms} ms · ${(r.bytes/1024).toFixed(1)} KB`:'失败: '+r.msg,r.ok?'ok':1)}catch(e){toast(e.message,1)}b.disabled=false;b.textContent='测试连接'};
+$('#q_clr').onclick=e=>armed(e.currentTarget,async()=>{try{await saveQwen({clearKey:true});toast('Key 已清除')}catch(er){toast(er.message,1)}});
+
+
+/* ---------- manual cleaning ---------- */
+$('#clean').onchange=e=>{S.set.cleanChars=e.target.value;saveSet();buildUnits()};
+let undoTxt=null;
+$('#btnClean').onclick=()=>{const t=$('#txt').value;if(!t)return;S.set.cleanChars=$('#clean').value;saveSet();undoTxt=t;
+  $('#txt').value=pre(t).replace(/\n{3,}/g,'\n\n').trim();$('#btnUndo').style.display='';buildUnits();toast('已清洗，可点“撤销”恢复')};
+$('#btnUndo').onclick=()=>{if(undoTxt==null)return;$('#txt').value=undoTxt;undoTxt=null;$('#btnUndo').style.display='none';buildUnits();toast('已撤销')};
+
+/* ---------- editor ---------- */
+function setMode(m){S.mode=m;$('#m1').classList.toggle('on',m==='single');$('#m2').classList.toggle('on',m==='dialogue');buildUnits()}
+$('#m1').onclick=()=>setMode('single');$('#m2').onclick=()=>setMode('dialogue');
+let tm;$('#txt').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(buildUnits,250)});
+$('#txt').addEventListener('paste',()=>{setTimeout(()=>{
+  const t=$('#txt').value;if(!S.cur)S.cust={};if(/^\s*[^:：\n]{1,16}[:：]/m.test(t)&&t.split('\n').filter(l=>/^[^:：]{1,16}[:：]/.test(l)).length>=2)setMode('dialogue');
+  {const sp=splitTitle(t);if(sp.title)$('#title').value=sp.title}if(t.includes('\\')&&S.mode==='single')setMode('dialogue');buildUnits();if(S.set.autoPlay){au.pause();au.currentTime=0;toggle()}},50)});
+$('#btnClear').onclick=()=>{S.cust={};$('#txt').value='';$('#title').value='';S.cur=null;au.pause();buildUnits();renderList()};
+$('#btnTxt').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([$('#txt').value],{type:'text/plain'}));a.download=($('#title').value||'edge_tts')+'.txt';a.click();URL.revokeObjectURL(a.href)};
+const payload=()=>({title:$('#title').value||splitTitle($('#txt').value).title||$('#txt').value.slice(0,20)||'未命名',text:$('#txt').value,mode:S.mode,voice:'auto',cust:S.cust});
+$('#btnSave').onclick=async()=>{if(!$('#txt').value.trim())return toast('文本为空',1);
+  try{if(S.cur){await api('/api/playlist/'+S.cur,{method:'PUT',body:payload()});toast('已更新')}else{S.cur=(await api('/api/playlist',{method:'POST',body:payload()})).id;toast('已保存')}await load()}catch(e){toast(e.message,1)}};
+$('#btnNew').onclick=async()=>{if(!$('#txt').value.trim())return toast('文本为空',1);
+  try{S.cur=(await api('/api/playlist',{method:'POST',body:payload()})).id;toast('已另存');await load()}catch(e){toast(e.message,1)}};
+
+/* ---------- playlist ---------- */
+function renderList(){
+  const q=$('#q').value.toLowerCase(),all=S.list.filter(i=>!q||(i.title+i.text).toLowerCase().includes(q)),show=all.slice(0,S.page*15);
+  $('#list').innerHTML=show.length?show.map(i=>`<div class="item${i.id===S.cur?' act':''}" data-id="${i.id}"><span class="h">⠿</span>
+   <div class="t"><b>${esc(i.title)}</b><small><span class="badge">${i.mode==='dialogue'?'对话':'单人'}</span> ${esc(i.text.slice(0,40))}</small></div>
+   <button data-a="p" title="播放">▶</button><button data-a="e">编辑</button><button data-a="d">删除</button></div>`).join(''):'<div class="muted">列表为空，保存一条试试 ✨</div>';
+  $('#more').style.display=all.length>show.length?'block':'none';
+}
+$('#more').onclick=()=>{S.page++;renderList()};$('#q').oninput=()=>{S.page=1;renderList()};
+$('#list').onclick=e=>{const b=e.target.closest('button'),it=e.target.closest('.item');if(!b||!it)return;const x=S.list.find(i=>i.id===it.dataset.id);if(!x)return;
+  if(b.dataset.a==='d')return armed(b,async()=>{try{await api('/api/playlist/'+x.id,{method:'DELETE'});if(S.cur===x.id)S.cur=null;toast('已删除');load()}catch(e){toast(e.message,1)}});
+  S.cur=x.id;S.cust=Object.assign({},x.cust||{});$('#title').value=x.title;$('#txt').value=x.text;setMode(x.mode);renderList();
+  if(b.dataset.a==='p'){au.pause();au.currentTime=0;toggle()}else toast('已载入编辑器，修改后点“保存”')};
+// smooth pointer-based drag sorting
+(()=>{let d=null,y0=0;const L=$('#list');
+ L.addEventListener('pointerdown',e=>{const h=e.target.closest('.h');if(!h)return;d=h.closest('.item');y0=e.clientY;d.classList.add('drag');h.setPointerCapture(e.pointerId)});
+ L.addEventListener('pointermove',e=>{if(!d)return;const items=[...L.children].filter(c=>c!==d);let dy=e.clientY-y0;d.style.transform=`translateY(${dy}px) scale(1.02)`;
+  const r=d.getBoundingClientRect(),mid=r.top+r.height/2;
+  for(const o of items){const q=o.getBoundingClientRect(),om=q.top+q.height/2;
+   const before=d.compareDocumentPosition(o)&Node.DOCUMENT_POSITION_FOLLOWING;
+   if(before&&mid>om){o.after(d);y0+=q.height+8;d.style.transform=`translateY(${e.clientY-y0}px) scale(1.02)`;break}
+   if(!before&&mid<om){o.before(d);y0-=q.height+8;d.style.transform=`translateY(${e.clientY-y0}px) scale(1.02)`;break}}});
+ const end=async()=>{if(!d)return;d.classList.remove('drag');d.style.transform='';d=null;
+  const ids=[...L.querySelectorAll('.item')].map(i=>i.dataset.id);S.list.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id));
+  try{await api('/api/reorder',{method:'POST',body:{ids}});toast('顺序已保存')}catch(e){toast(e.message,1)}};
+ L.addEventListener('pointerup',end);L.addEventListener('pointercancel',end)})();
+
+/* ---------- init (also used by in-page refresh, never reloads the page) ---------- */
+async function load(){S.list=await api('/api/playlist');renderList()}
+async function init(){
+  try{S.set=Object.assign({},DEF,await api('/api/settings'));applyTheme(S.set.theme);$('#auto').checked=!!S.set.autoPlay;$('#prog').checked=!!S.set.progressive;$('#gap').value=S.set.gap;$('#clean').value=S.set.cleanChars||'';$('#names').checked=!!S.set.readNames;
+    S.voices=await api('/api/voices');buildSettings();await load();loadQwen();buildUnits()}
+  catch(e){toast('加载失败: '+e.message,1)}}
+$('#refresh').onclick=async()=>{const b=$('#refresh');b.innerHTML='<span class="spin">↻</span> 刷新';await init();b.textContent='↻ 刷新';toast('数据已刷新')};
+init();
+</script>
+</body>
+</html>
