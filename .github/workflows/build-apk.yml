@@ -1,0 +1,145 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: 目标架构（绝大多数手机选 aarch64）
+        type: choice
+        default: aarch64
+        options:
+          - aarch64
+          - armv7
+          - x86_64
+          - all
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      ARCH: ${{ inputs.arch || 'aarch64' }}
+      APP_NAME: EdgeTTS
+      KEY_ALIAS: edgetts
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check project files
+        run: |
+          test -f src/index.html && test -f src/shim.js && test -f app-icon.png || { echo "缺少 src/index.html / src/shim.js / app-icon.png"; ls -R . | head -50; exit 1; }
+          ls -l src app-icon.png
+
+      - name: Patch index.html (inject backend-address feature)
+        run: python3 scripts/patch_index.py src/index.html
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK / NDK
+        run: |
+          SDKM=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -1)
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platform-tools" "platforms;android-34" "platforms;android-35" "platforms;android-36" "build-tools;34.0.0" "build-tools;35.0.0" "build-tools;36.0.0" "ndk;26.1.10909125"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> "$GITHUB_ENV"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # 必须用 cargo 版 CLI：npm 版会让 Gradle 去执行 `node tauri`，找不到路径而失败
+      - name: Install Tauri CLI
+        run: command -v cargo-tauri || cargo install tauri-cli --version "^2" --locked
+
+      - name: Generate icons
+        run: cargo tauri icon app-icon.png
+
+      - name: Init Android project
+        run: cargo tauri android init --ci
+
+      - name: Patch Android project (dark theme + allow http backend)
+        run: |
+          python3 - <<'PY'
+          import glob, re
+          # 1) 深色窗口/状态栏/导航栏，避免启动白屏
+          for f in glob.glob('src-tauri/gen/android/app/src/main/res/values*/themes.xml'):
+              s = open(f, encoding='utf-8').read()
+              if 'windowBackground' in s: continue
+              add = ('    <item name="android:windowBackground">#16181D</item>\n'
+                     '    <item name="android:statusBarColor">#16181D</item>\n'
+                     '    <item name="android:navigationBarColor">#16181D</item>\n')
+              s = s.replace('</style>', add + '</style>', 1)
+              open(f, 'w', encoding='utf-8').write(s)
+              print('themed', f)
+          # 2) 允许明文 http 后端（局域网 IP 常用 http）
+          f = 'src-tauri/gen/android/app/src/main/AndroidManifest.xml'
+          s = open(f, encoding='utf-8').read()
+          if 'usesCleartextTraffic' in s:
+              s = re.sub(r'android:usesCleartextTraffic="[^"]*"', 'android:usesCleartextTraffic="true"', s)
+          else:
+              s = s.replace('<application', '<application android:usesCleartextTraffic="true"', 1)
+          open(f, 'w', encoding='utf-8').write(s)
+          print('cleartext enabled')
+          PY
+
+      - name: Build APK
+        run: |
+          if [ "$ARCH" = "all" ]; then
+            cargo tauri android build --apk --ci
+          else
+            cargo tauri android build --apk --ci --target "$ARCH"
+          fi
+
+      - name: Restore signing key cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.keystore
+          key: edgetts-keystore-v1
+
+      - name: Sign APK
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          BT="$ANDROID_HOME/build-tools/34.0.0"
+          UNSIGNED=$(find src-tauri/gen/android -path '*outputs/apk*' -name '*.apk' | head -1)
+          echo "unsigned: $UNSIGNED"
+          test -n "$UNSIGNED"
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
+            KS="$RUNNER_TEMP/release.keystore"; PASS="$KS_PASS"
+            echo "$KS_B64" | base64 -d > "$KS"
+          else
+            mkdir -p ~/.keystore
+            KS="$HOME/.keystore/edgetts.keystore"; PASS="edgetts-auto-pass"
+            if [ ! -f "$KS" ]; then
+              keytool -genkeypair -keystore "$KS" -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 36500 \
+                -storepass "$PASS" -keypass "$PASS" -dname "CN=EdgeTTS"
+            fi
+          fi
+          "$BT/zipalign" -p -f 4 "$UNSIGNED" aligned.apk
+          "$BT/apksigner" sign --ks "$KS" --ks-key-alias "$KEY_ALIAS" --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
+            --out "$APP_NAME.apk" aligned.apk
+          "$BT/apksigner" verify "$APP_NAME.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EdgeTTS-apk
+          path: EdgeTTS.apk
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: EdgeTTS.apk
